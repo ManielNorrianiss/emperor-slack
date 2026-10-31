@@ -1,0 +1,24 @@
+{
+  "name": "emperor-slack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Emperor : bot Slack qui répond aux questions des clients GRO et de l'équipe à partir des fiches clients.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@slack/web-api": "^7.9.0",
+    "@vercel/functions": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

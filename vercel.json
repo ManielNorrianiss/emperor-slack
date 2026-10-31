@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/slack/events.ts": {
+      "includeFiles": "{knowledge/**,config/**}",
+      "maxDuration": 60
+    }
+  }
+}
