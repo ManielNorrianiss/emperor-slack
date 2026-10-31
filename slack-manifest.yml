@@ -21,7 +21,7 @@ oauth_config:
       - users:read
 settings:
   event_subscriptions:
-    request_url: https://REMPLACER-PAR-TON-PROJET.vercel.app/api/slack/events
+    request_url: https://emperor-slack.vercel.app/api/slack/events
     bot_events:
       - app_mention
       - message.im
