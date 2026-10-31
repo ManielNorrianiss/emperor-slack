@@ -5,7 +5,8 @@ Emperor répond aux questions des clients et de l'équipe GRO sur les systèmes 
 ## Comment il décide quoi lire
 
 - **Canal partagé avec un client** : il charge seulement `knowledge/<client>/client.md`, peu importe qui pose la question (le client lit la réponse).
-- **Canal interne GRO ou message privé** : seulement pour un membre de GRO. Il charge toutes les fiches, version client et version équipe.
+- **Canal interne GRO ou message privé** : seulement pour un membre de GRO. Il charge la version client et la version équipe du ou des clients nommés dans la question (3 au maximum). S'il ne reconnaît aucun client, il demande lequel, sans appeler l'API.
+- **Canal interne dédié à un client** (`"public": "equipe"` avec `"client"`) : il charge directement les deux fiches de ce client.
 - **Canal absent de `config/canaux.json`** : il ne répond pas.
 - Quand il ne sait pas, il le dit et t'identifie dans le fil.
 
@@ -62,8 +63,16 @@ Redéploie ensuite (**Deployments → ⋯ → Redeploy**) pour que les variables
 
 1. Crée `knowledge/<client>/client.md` (ce que le client peut voir) et `knowledge/<client>/equipe.md` (interne).
    Le nom du dossier : minuscules, chiffres et tirets seulement (ex. `bgc`, `groupe-module`).
-2. Ajoute son canal dans `config/canaux.json` avec `"client": "<client>"` et `"public": "client"`.
-3. Invite Emperor dans le canal.
+2. Ajoute-le dans `config/clients.json` avec son nom et les façons dont l'équipe le nomme (`"alias"`).
+3. Ajoute son canal dans `config/canaux.json` avec `"client": "<client>"` et `"public": "client"`.
+4. Invite Emperor dans le canal.
+
+## Coûts et performance
+
+- Chaque question ne charge que la fiche du client concerné, jamais tout le catalogue.
+- Le prompt (règles + fiche) est mis en cache chez Anthropic : les questions suivantes sur le même client coûtent beaucoup moins cher en entrée et répondent plus vite.
+- Les journaux Vercel affichent une ligne `Emperor: jetons` par réponse (entrée, lu du cache, sortie) pour suivre les coûts.
+- Une question d'équipe sans client reconnu ne coûte rien : le bot demande de préciser.
 
 ## Pour développer
 

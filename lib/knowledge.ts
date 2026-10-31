@@ -1,44 +1,45 @@
-// Charge les fiches autorisées par lib/routing.ts. Rien d'autre.
-import { readFile, readdir } from "node:fs/promises";
+// Charge seulement les fiches autorisées par lib/routing.ts. Rien d'autre.
+// Les fichiers sont gardés en mémoire tant que l'instance Vercel reste chaude.
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { Decision } from "./routing.js";
+import { SLUG } from "./routing.js";
 
 const RACINE = path.join(process.cwd(), "knowledge");
+const cache = new Map<string, string | null>();
 
-async function lire(fichier: string): Promise<string | null> {
+async function lire(relatif: string): Promise<string | null> {
+  if (cache.has(relatif)) return cache.get(relatif)!;
+  let contenu: string | null = null;
   try {
-    return await readFile(fichier, "utf8");
+    contenu = await readFile(path.join(RACINE, relatif), "utf8");
   } catch {
-    return null;
+    contenu = null;
   }
+  cache.set(relatif, contenu);
+  return contenu;
 }
 
 export async function reglesCommunes(): Promise<string> {
-  return (await lire(path.join(RACINE, "regles-communes.md"))) ?? "";
+  return (await lire("regles-communes.md")) ?? "";
 }
 
-export async function chargerFiches(decision: Extract<Decision, { action: "repondre" }>): Promise<string> {
-  if (decision.public === "client") {
-    // UNE seule fiche : la version client de CE client.
-    const fiche = await lire(path.join(RACINE, decision.client, "client.md"));
-    if (!fiche) throw new Error(`Fiche client introuvable pour « ${decision.client} »`);
-    return fiche;
-  }
+// Version client : UNE seule fiche, celle de CE client.
+export async function ficheClient(client: string): Promise<string> {
+  if (!SLUG.test(client)) throw new Error("nom de client invalide");
+  const fiche = await lire(path.join(client, "client.md"));
+  if (!fiche) throw new Error(`Fiche client introuvable pour « ${client} »`);
+  return fiche;
+}
 
-  // Équipe GRO : toutes les fiches, version client et version équipe.
-  const dossiers = (await readdir(RACINE, { withFileTypes: true }))
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
-
+// Version équipe : les deux fiches des clients demandés seulement.
+export async function fichesEquipe(clients: string[]): Promise<string> {
   const morceaux: string[] = [];
-  for (const client of dossiers) {
-    const versionClient = await lire(path.join(RACINE, client, "client.md"));
-    const versionEquipe = await lire(path.join(RACINE, client, "equipe.md"));
+  for (const client of clients) {
+    if (!SLUG.test(client)) continue;
+    const versionClient = await lire(path.join(client, "client.md"));
+    const versionEquipe = await lire(path.join(client, "equipe.md"));
     if (!versionClient && !versionEquipe) continue;
-    morceaux.push(
-      `<client id="${client}">\n${versionClient ?? ""}\n\n${versionEquipe ?? ""}\n</client>`
-    );
+    morceaux.push(`<client id="${client}">\n${versionClient ?? ""}\n\n${versionEquipe ?? ""}\n</client>`);
   }
   return morceaux.join("\n\n");
 }

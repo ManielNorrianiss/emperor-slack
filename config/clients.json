@@ -1,0 +1,6 @@
+{
+  "_aide": "Un client par dossier dans knowledge/. « alias » = les façons dont l'équipe nomme ce client dans une question (minuscules). Le bot s'en sert pour charger seulement la bonne fiche.",
+  "clients": {
+    "m2s": { "nom": "Groupe M2S", "alias": ["m2s", "groupe m2s"] }
+  }
+}

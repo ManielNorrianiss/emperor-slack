@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decider, type ConfigCanaux } from "../lib/routing.js";
+import { decider, detecterClients, type ConfigCanaux, type ConfigClients } from "../lib/routing.js";
 
 const config: ConfigCanaux = {
   canaux: {
@@ -39,4 +39,33 @@ test("canal inconnu : ignoré", () => {
 
 test("nom de client invalide (chemin) : ignoré", () => {
   assert.deepEqual(decider(config, { canal: "CMAUVAIS", typeCanal: "channel", estMembreGro: true }), { action: "ignorer" });
+});
+
+test("canal interne dédié à un client : équipe, ce client seulement", () => {
+  const cfg: ConfigCanaux = { canaux: { CDED: { client: "m2s", public: "equipe" } } };
+  assert.deepEqual(decider(cfg, { canal: "CDED", typeCanal: "channel", estMembreGro: true }), {
+    action: "repondre",
+    public: "equipe",
+    client: "m2s",
+  });
+  assert.equal(decider(cfg, { canal: "CDED", typeCanal: "channel", estMembreGro: false }).action, "refuser");
+});
+
+const clients: ConfigClients = {
+  clients: {
+    m2s: { nom: "Groupe M2S", alias: ["m2s"] },
+    bgc: { nom: "Gestion BGC", alias: ["bgc"] },
+    "groupe-module": { nom: "Groupe Module Constructions", alias: ["module"] },
+  },
+};
+
+test("détection du client nommé dans la question", () => {
+  assert.deepEqual(detecterClients(clients, "Comment on approuve une facture chez M2S ?"), ["m2s"]);
+  assert.deepEqual(detecterClients(clients, "chez bgc et chez Module, c'est pareil ?"), ["bgc", "groupe-module"]);
+  assert.deepEqual(detecterClients(clients, "Gestion BGC : les extras ?"), ["bgc"]);
+});
+
+test("détection : pas de faux positif sur un bout de mot", () => {
+  assert.deepEqual(detecterClients(clients, "la modulation des prix"), []);
+  assert.deepEqual(detecterClients(clients, "comment ça marche ?"), []);
 });

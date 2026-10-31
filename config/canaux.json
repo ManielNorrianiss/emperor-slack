@@ -1,5 +1,5 @@
 {
-  "_aide": "Associe chaque canal Slack à un client et à un public. public = \"client\" : le bot ne charge QUE la version client de ce client, peu importe qui pose la question. public = \"equipe\" : canal interne GRO, le bot charge toutes les fiches (client + équipe) mais seulement pour un membre de GRO. Un canal absent de cette liste est ignoré. Remplace les identifiants d'exemple par les vrais (clic droit sur le canal > Copier le lien : l'identifiant commence par C).",
+  "_aide": "Associe chaque canal Slack à un public. public = \"client\" : canal partagé avec un client, le bot charge QUE la version client de ce client, peu importe qui pose la question. public = \"equipe\" : canal interne GRO, réservé aux membres de GRO ; avec \"client\", le canal est dédié à ce client, sinon le bot repère le client nommé dans la question. Un canal absent de cette liste est ignoré. Identifiant d'un canal : clic droit > Copier le lien, la fin commence par C.",
   "canaux": {
     "C_REMPLACER_M2S": { "client": "m2s", "public": "client" },
     "C_REMPLACER_INTERNE": { "public": "equipe" }

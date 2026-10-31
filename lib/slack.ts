@@ -16,8 +16,18 @@ export function signatureValide(corpsBrut: string, horodatage: string | null, si
 }
 
 // Membre de GRO = compte du Slack de GRO, pas invité, pas externe (Slack Connect).
-// En cas de doute ou d'erreur : NON.
+// En cas de doute ou d'erreur : NON. Réponse gardée 10 minutes pour éviter un appel par message.
+const membres = new Map<string, { gro: boolean; expire: number }>();
+
 export async function estMembreGro(userId: string): Promise<boolean> {
+  const connu = membres.get(userId);
+  if (connu && connu.expire > Date.now()) return connu.gro;
+  const gro = await verifierMembreGro(userId);
+  membres.set(userId, { gro, expire: Date.now() + 10 * 60 * 1000 });
+  return gro;
+}
+
+async function verifierMembreGro(userId: string): Promise<boolean> {
   const equipeGro = process.env.GRO_TEAM_ID;
   if (!equipeGro) return false;
   try {
@@ -48,7 +58,7 @@ export async function historiqueDuFil(canal: string, filTs: string, botUserId: s
     const res = await slack.conversations.replies({ channel: canal, ts: filTs, limit: 20 });
     const tours: Tour[] = [];
     for (const m of res.messages ?? []) {
-      const texte = nettoyer(m.text ?? "");
+      const texte = nettoyer(m.text ?? "").slice(0, 4000);
       if (!texte) continue;
       const role = m.user === botUserId || m.bot_id ? "assistant" : "user";
       const precedent = tours[tours.length - 1];

@@ -1,6 +1,6 @@
 // Décide quelles fiches le bot a le droit de charger pour un message donné.
 // C'est ici que l'étanchéité entre clients est garantie : le modèle ne reçoit
-// jamais un fichier que cette fonction n'a pas autorisé.
+// jamais un fichier que ces fonctions n'ont pas autorisé.
 
 export type Public = "client" | "equipe";
 
@@ -13,19 +13,28 @@ export interface ConfigCanaux {
   canaux: Record<string, CanalConfig>;
 }
 
+export interface ClientConfig {
+  nom: string;
+  alias: string[];
+}
+
+export interface ConfigClients {
+  clients: Record<string, ClientConfig>;
+}
+
 export interface Contexte {
   canal: string;
-  typeCanal: "im" | "channel" | "group" | "mpim" | string;
+  typeCanal: string;
   estMembreGro: boolean;
 }
 
 export type Decision =
   | { action: "repondre"; public: "client"; client: string }
-  | { action: "repondre"; public: "equipe" }
+  | { action: "repondre"; public: "equipe"; client?: string }
   | { action: "refuser"; raison: string }
   | { action: "ignorer" };
 
-const SLUG = /^[a-z0-9-]{2,40}$/;
+export const SLUG = /^[a-z0-9-]{2,40}$/;
 
 export function decider(config: ConfigCanaux, ctx: Contexte): Decision {
   // Message privé : seulement pour les membres de GRO, en mode équipe.
@@ -47,11 +56,35 @@ export function decider(config: ConfigCanaux, ctx: Contexte): Decision {
   }
 
   if (canal.public === "equipe") {
-    if (!ctx.estMembreGro) {
-      return { action: "refuser", raison: "Ce canal est réservé à l'équipe GRO." };
+    if (!ctx.estMembreGro) return { action: "refuser", raison: "Ce canal est réservé à l'équipe GRO." };
+    if (canal.client !== undefined) {
+      if (!SLUG.test(canal.client)) return { action: "ignorer" };
+      return { action: "repondre", public: "equipe", client: canal.client };
     }
     return { action: "repondre", public: "equipe" };
   }
 
   return { action: "ignorer" };
+}
+
+function normaliser(texte: string): string {
+  return texte
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// Repère les clients nommés dans un texte (question + fil), par alias entier.
+// Le plus récent mentionné en premier n'a pas d'importance : on renvoie l'ordre alphabétique.
+export function detecterClients(config: ConfigClients, texte: string): string[] {
+  const t = ` ${normaliser(texte)} `;
+  const trouves: string[] = [];
+  for (const [slug, c] of Object.entries(config.clients)) {
+    if (!SLUG.test(slug)) continue;
+    const alias = [slug, c.nom, ...c.alias].map(normaliser).filter(Boolean);
+    if (alias.some((a) => t.includes(` ${a} `))) trouves.push(slug);
+  }
+  return trouves.sort();
 }
